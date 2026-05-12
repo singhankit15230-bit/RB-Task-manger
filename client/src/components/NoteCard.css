@@ -172,6 +172,11 @@
   color: var(--primary-dark);
 }
 
+.badge-owner {
+  background-color: rgba(15, 23, 42, 0.08);
+  color: #334155;
+}
+
 .note-title {
   font-size: 1.25rem;
   font-weight: 600;

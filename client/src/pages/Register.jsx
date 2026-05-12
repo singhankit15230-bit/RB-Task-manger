@@ -13,6 +13,7 @@ const Register = () => {
     confirmPassword: '',
   });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -39,8 +40,13 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await register(formData.name, formData.email, formData.password);
-      navigate('/');
+      const response = await register(formData.name, formData.email, formData.password);
+
+      if (response.token) {
+        navigate('/');
+      } else {
+        setSuccess(response.message || 'Registration successful. Please verify your email.');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
@@ -59,6 +65,12 @@ const Register = () => {
         {error && (
           <div className="alert alert-error">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="alert alert-success">
+            {success}
           </div>
         )}
 

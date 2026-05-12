@@ -3,6 +3,9 @@ import './NoteCard.css';
 
 const NoteCard = ({ note, onEdit, onDelete, onToggle }) => {
 // const NoteCard = ({ note, onEdit, onDelete }) => {
+  const ownerName =
+    note.user && typeof note.user === 'object' ? note.user.name : null;
+
   const getTaskStatus = () => {
     if (note.completed) {
       return {
@@ -119,6 +122,7 @@ const NoteCard = ({ note, onEdit, onDelete, onToggle }) => {
         <div className="note-meta">
           {note.completed && <span className="badge badge-success">Completed</span>}
           {note.dueDate && <span className="badge badge-info">Due {new Date(note.dueDate).toLocaleDateString()}</span>}
+          {ownerName && <span className="badge badge-owner">Owner: {ownerName}</span>}
         </div>
       </div>
 

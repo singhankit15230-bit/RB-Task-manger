@@ -2,12 +2,20 @@ import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import './NoteModal.css';
 
-const NoteModal = ({ note, onClose, onSave }) => {
+const NoteModal = ({
+  note,
+  onClose,
+  onSave,
+  scope = 'personal',
+  team = null,
+  assigneeOptions = [],
+}) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     dueDate: '',
     completed: false,
+    assignedTo: '',
   });
   const [file, setFile] = useState(null);
   const [existingFile, setExistingFile] = useState(null);
@@ -21,6 +29,7 @@ const NoteModal = ({ note, onClose, onSave }) => {
         description: note.description,
         dueDate: note.dueDate ? note.dueDate.slice(0, 10) : '',
         completed: note.completed || false,
+        assignedTo: note.assignedTo?._id || note.assignedTo || '',
       });
       setExistingFile(note.file || null);
     }
@@ -100,17 +109,28 @@ const NoteModal = ({ note, onClose, onSave }) => {
       formDataToSend.append('dueDate', dueDateToSave);
       formDataToSend.append('completed', formData.completed);
 
+      if (scope === 'team') {
+        formDataToSend.append('assignedTo', formData.assignedTo);
+      }
+
       if (file) {
         formDataToSend.append('file', file);
       }
 
-      if (note) {
-        // Update existing note
+      if (scope === 'team' && team) {
+        const teamTaskUrl = note
+          ? `/teams/${team._id}/tasks/${note._id}`
+          : `/teams/${team._id}/tasks`;
+        const method = note ? api.patch : api.post;
+
+        await method(teamTaskUrl, formDataToSend, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else if (note) {
         await api.put(`/notes/${note._id}`, formDataToSend, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else {
-        // Create new note
         await api.post('/notes', formDataToSend, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
@@ -143,7 +163,7 @@ const NoteModal = ({ note, onClose, onSave }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{note ? 'Edit Task' : 'Create New Task'}</h2>
+          <h2>{note ? 'Edit Task' : scope === 'team' ? 'Create Team Task' : 'Create New Task'}</h2>
           <button className="btn-close" onClick={onClose}>
             ✕
           </button>
@@ -204,6 +224,30 @@ const NoteModal = ({ note, onClose, onSave }) => {
             />
             <label htmlFor="completed">✅ Mark task complete</label>
           </div>
+
+          {scope === 'team' && (
+            <div className="form-group">
+              <label htmlFor="assignedTo">Assign To</label>
+              <select
+                id="assignedTo"
+                name="assignedTo"
+                value={formData.assignedTo}
+                onChange={handleChange}
+              >
+                <option value="">Unassigned</option>
+                {assigneeOptions.map((member) => {
+                  const memberUserId = member.user?._id || member.user;
+                  const memberName = member.user?.name || member.user?.email || 'Unknown user';
+
+                  return (
+                    <option key={memberUserId} value={memberUserId}>
+                      {memberName}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="file-input">

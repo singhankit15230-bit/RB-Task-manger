@@ -1,6 +1,7 @@
 import Note from '../models/Note.js';
 import { encryptFile, decryptFile, deleteEncryptedFile } from '../utils/encryption.js';
-import path from 'path';
+import { createAuditLog } from '../utils/auditLogger.js';
+import { canManageNote, sanitizeNoteForResponse } from '../utils/permissions.js';
 
 /**
  * @desc    Create a new note
@@ -53,10 +54,22 @@ export const createNote = async (req, res, next) => {
     // Create note
     const note = await Note.create(noteData);
 
+    await createAuditLog({
+      actor: req.user.id,
+      action: 'note.create',
+      entityType: 'note',
+      entityId: note._id.toString(),
+      details: {
+        title: note.title,
+        hasFile: Boolean(note.file?.encryptedPath)
+      },
+      req
+    });
+
     res.status(201).json({
       success: true,
       message: 'Task created successfully',
-      note
+      note: sanitizeNoteForResponse(note)
     });
   } catch (error) {
     next(error);
@@ -70,14 +83,15 @@ export const createNote = async (req, res, next) => {
  */
 export const getNotes = async (req, res, next) => {
   try {
-    const notes = await Note.find({ user: req.user.id })
+    const notes = await Note.find({ user: req.user.id, team: { $exists: false } })
+      .populate('user', 'name email role')
       .sort({ completed: 1, createdAt: -1 })
-      .select('-file.encryptedPath -file.iv'); // Don't send sensitive file data
+      .select('-file.encryptedPath -file.iv');
 
     res.status(200).json({
       success: true,
       count: notes.length,
-      notes
+      notes: notes.map((note) => sanitizeNoteForResponse(note))
     });
   } catch (error) {
     next(error);
@@ -92,6 +106,7 @@ export const getNotes = async (req, res, next) => {
 export const getNote = async (req, res, next) => {
   try {
     const note = await Note.findById(req.params.id)
+      .populate('user', 'name email role')
       .select('-file.encryptedPath -file.iv');
 
     if (!note) {
@@ -102,7 +117,7 @@ export const getNote = async (req, res, next) => {
     }
 
     // Check ownership
-    if (note.user.toString() !== req.user.id) {
+    if (!canManageNote(req.user, note)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this note'
@@ -111,7 +126,7 @@ export const getNote = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      note
+      note: sanitizeNoteForResponse(note)
     });
   } catch (error) {
     next(error);
@@ -135,7 +150,7 @@ export const updateNote = async (req, res, next) => {
     }
 
     // Check ownership
-    if (note.user.toString() !== req.user.id) {
+    if (!canManageNote(req.user, note)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this note'
@@ -179,17 +194,23 @@ export const updateNote = async (req, res, next) => {
 
     await note.save();
 
-    // Remove sensitive data before sending response
-    const responseNote = note.toObject();
-    if (responseNote.file) {
-      delete responseNote.file.encryptedPath;
-      delete responseNote.file.iv;
-    }
+    await createAuditLog({
+      actor: req.user.id,
+      action: 'note.update',
+      entityType: 'note',
+      entityId: note._id.toString(),
+      details: {
+        title: note.title,
+        completed: note.completed,
+        updatedOwnResource: note.user.toString() === req.user.id
+      },
+      req
+    });
 
     res.status(200).json({
       success: true,
       message: 'Task updated successfully',
-      note: responseNote
+      note: sanitizeNoteForResponse(note)
     });
   } catch (error) {
     next(error);
@@ -213,7 +234,7 @@ export const deleteNote = async (req, res, next) => {
     }
 
     // Check ownership
-    if (note.user.toString() !== req.user.id) {
+    if (!canManageNote(req.user, note)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this note'
@@ -224,6 +245,18 @@ export const deleteNote = async (req, res, next) => {
     if (note.file && note.file.encryptedPath) {
       await deleteEncryptedFile(note.file.encryptedPath);
     }
+
+    await createAuditLog({
+      actor: req.user.id,
+      action: 'note.delete',
+      entityType: 'note',
+      entityId: note._id.toString(),
+      details: {
+        title: note.title,
+        deletedOwnResource: note.user.toString() === req.user.id
+      },
+      req
+    });
 
     await note.deleteOne();
 
@@ -253,7 +286,7 @@ export const downloadFile = async (req, res, next) => {
     }
 
     // Check ownership
-    if (note.user.toString() !== req.user.id) {
+    if (!canManageNote(req.user, note)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this file'
@@ -273,6 +306,17 @@ export const downloadFile = async (req, res, next) => {
       note.file.encryptedPath,
       note.file.iv
     );
+
+    await createAuditLog({
+      actor: req.user.id,
+      action: 'note.file_download',
+      entityType: 'note',
+      entityId: note._id.toString(),
+      details: {
+        fileName: note.file.originalName
+      },
+      req
+    });
 
     // Set headers for file download
     res.setHeader('Content-Type', note.file.mimeType);
@@ -310,7 +354,7 @@ export const deleteFile = async (req, res, next) => {
     }
 
     // Check ownership
-    if (note.user.toString() !== req.user.id) {
+    if (!canManageNote(req.user, note)) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to modify this note'
@@ -327,6 +371,17 @@ export const deleteFile = async (req, res, next) => {
 
     // Delete encrypted file
     await deleteEncryptedFile(note.file.encryptedPath);
+
+    await createAuditLog({
+      actor: req.user.id,
+      action: 'note.file_delete',
+      entityType: 'note',
+      entityId: note._id.toString(),
+      details: {
+        fileName: note.file.originalName
+      },
+      req
+    });
 
     // Remove file data from note
     note.file = undefined;

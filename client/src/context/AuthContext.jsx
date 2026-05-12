@@ -19,14 +19,26 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  const checkAuth = () => {
+  const checkAuth = async () => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
-      setUser(JSON.parse(userData));
+
+    if (!token) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    try {
+      const response = await api.get('/auth/me');
+      const currentUser = response.data.user;
+      localStorage.setItem('user', JSON.stringify(currentUser));
+      setUser(currentUser);
+    } catch (error) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const login = async (email, password) => {
@@ -43,11 +55,13 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password) => {
     const response = await api.post('/auth/register', { name, email, password });
     const { token, user } = response.data;
-    
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    setUser(user);
-    
+
+    if (token) {
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      setUser(user);
+    }
+
     return response.data;
   };
 
@@ -63,6 +77,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    refreshUser: checkAuth,
     isAuthenticated: !!user,
   };
 

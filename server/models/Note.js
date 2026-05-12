@@ -25,6 +25,14 @@ const noteSchema = new mongoose.Schema(
       ref: 'User',
       required: true
     },
+    team: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Team'
+    },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
     file: {
       fileName: {
         type: String
@@ -54,6 +62,8 @@ const noteSchema = new mongoose.Schema(
 // Create indexes for better query performance
 noteSchema.index({ user: 1, createdAt: -1 });
 noteSchema.index({ user: 1, completed: 1, createdAt: -1 });
+noteSchema.index({ team: 1, completed: 1, createdAt: -1 });
+noteSchema.index({ assignedTo: 1, completed: 1, createdAt: -1 });
 
 const Note = mongoose.model('Note', noteSchema);
 

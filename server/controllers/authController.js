@@ -1,5 +1,7 @@
 import User from '../models/User.js';
 import { generateToken } from '../middleware/auth.js';
+import { createAuditLog } from '../utils/auditLogger.js';
+import { normalizeEmail, validateEmailAddress } from '../utils/emailValidation.js';
 
 /**
  * @desc    Register a new user
@@ -18,8 +20,16 @@ export const register = async (req, res, next) => {
       });
     }
 
+    const emailValidation = await validateEmailAddress(email);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({
+        success: false,
+        message: emailValidation.message
+      });
+    }
+
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email: emailValidation.normalizedEmail });
     if (userExists) {
       return res.status(400).json({
         success: false,
@@ -27,14 +37,25 @@ export const register = async (req, res, next) => {
       });
     }
 
-    // Create user
     const user = await User.create({
       name,
-      email,
-      password
+      email: emailValidation.normalizedEmail,
+      password,
+      role: 'user'
     });
 
-    // Generate token
+    await createAuditLog({
+      actor: user._id,
+      action: 'auth.register',
+      entityType: 'user',
+      entityId: user._id.toString(),
+      details: {
+        email: user.email,
+        role: user.role
+      },
+      req
+    });
+
     const token = generateToken(user._id);
 
     res.status(201).json({
@@ -44,7 +65,8 @@ export const register = async (req, res, next) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
   } catch (error) {
@@ -69,10 +91,23 @@ export const login = async (req, res, next) => {
       });
     }
 
+    const normalizedEmail = normalizeEmail(email);
+
     // Find user and include password
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
 
     if (!user) {
+      await createAuditLog({
+        action: 'auth.login',
+        entityType: 'user',
+        status: 'failure',
+        details: {
+          email,
+          reason: 'user_not_found'
+        },
+        req
+      });
+
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -83,14 +118,44 @@ export const login = async (req, res, next) => {
     const isPasswordMatch = await user.comparePassword(password);
 
     if (!isPasswordMatch) {
+      await createAuditLog({
+        actor: user._id,
+        action: 'auth.login',
+        entityType: 'user',
+        entityId: user._id.toString(),
+        status: 'failure',
+        details: {
+          email,
+          reason: 'invalid_password'
+        },
+        req
+      });
+
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
     }
 
+    if (user.role !== 'user') {
+      user.role = 'user';
+      await user.save();
+    }
+
     // Generate token
     const token = generateToken(user._id);
+
+    await createAuditLog({
+      actor: user._id,
+      action: 'auth.login',
+      entityType: 'user',
+      entityId: user._id.toString(),
+      details: {
+        email: user.email,
+        role: user.role
+      },
+      req
+    });
 
     res.status(200).json({
       success: true,
@@ -99,7 +164,8 @@ export const login = async (req, res, next) => {
       user: {
         id: user._id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        role: user.role
       }
     });
   } catch (error) {
@@ -116,12 +182,18 @@ export const getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
 
+    if (user.role !== 'user') {
+      user.role = 'user';
+      await user.save();
+    }
+
     res.status(200).json({
       success: true,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
         createdAt: user.createdAt
       }
     });

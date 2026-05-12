@@ -88,6 +88,12 @@
   text-overflow: ellipsis;
 }
 
+.navbar-user-role {
+  color: var(--primary-dark);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .btn-logout {
   position: relative;
   width: 2.9rem;

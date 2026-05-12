@@ -5,6 +5,7 @@ import './Navbar.css';
 const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const userInitial = user?.name?.charAt(0)?.toUpperCase() || 'U';
+  const roleLabel = 'User';
 
   const handleLogout = () => {
     const shouldLogout = window.confirm('Do you want to log out?');
@@ -30,6 +31,7 @@ const Navbar = () => {
               <div className="navbar-user-meta">
                 <span className="navbar-user-label">Signed in as</span>
                 <span className="navbar-user">{user?.name}</span>
+                <span className="navbar-user-role">{roleLabel}</span>
               </div>
             </div>
 
