@@ -1,23 +1,25 @@
-# 🔐 Secure Notes Application
+# 🔐 RB Task Manager Application
 
-A full-stack web application for creating and managing notes with **AES-256 encrypted file attachments**. Built with React, Node.js, Express, and MongoDB.
+A full-stack web application for creating and managing tasks with **AES-256 encrypted file attachments**. Built with React, Node.js, Express, and MongoDB.
 
 ## ✨ Features
 
 ### Core Features
+
 - ✅ **User Authentication** - Secure JWT-based authentication
 - ✅ **Password Security** - bcrypt password hashing
 - ✅ **Protected Routes** - Authorization middleware
-- ✅ **CRUD Operations** - Create, Read, Update, Delete notes
+- ✅ **CRUD Operations** - Create, Read, Update, Delete tasks
 - ✅ **File Encryption** - AES-256-CBC encryption for all file attachments
 - ✅ **Secure Downloads** - Encrypted files are decrypted on-demand
-- ✅ **Pin Notes** - Mark important notes as pinned
+- ✅ **Pin Tasks** - Mark important tasks as pinned
 - ✅ **Responsive Design** - Works on desktop, tablet, and mobile
 
 ### Security Features
+
 - 🔒 **End-to-End Encryption** - Files encrypted before storage
 - 🔒 **Secure Key Management** - Encryption keys stored in environment variables
-- 🔒 **User Isolation** - Users can only access their own notes and files
+- 🔒 **User Isolation** - Users can only access their own tasks and files
 - 🔒 **JWT Authentication** - Stateless authentication with tokens
 - 🔒 **Password Hashing** - bcrypt with salt rounds
 - 🔒 **File Validation** - Type and size restrictions
@@ -25,7 +27,7 @@ A full-stack web application for creating and managing notes with **AES-256 encr
 ## 🏗️ Architecture
 
 ```
-secure-notes-app/
+rb-task-manager/
 ├── server/                 # Backend (Node.js + Express)
 │   ├── config/            # Configuration files
 │   ├── controllers/       # Route controllers
@@ -52,13 +54,15 @@ secure-notes-app/
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - **Node.js** >= 16.x
 - **MongoDB** >= 5.x (running locally or MongoDB Atlas)
 - **npm** or **yarn**
 
 ### 1. Clone the Repository
+
 ```bash
-cd secure-notes-app
+cd rb-task-manager
 ```
 
 ### 2. Backend Setup
@@ -82,12 +86,13 @@ nano .env
 ```
 
 **Required Environment Variables:**
+
 ```env
 PORT=5000
 NODE_ENV=development
 
 # MongoDB
-MONGODB_URI=mongodb://localhost:27017/secure-notes-db
+MONGODB_URI=mongodb://localhost:27017/rb-task-manager-db
 
 # JWT
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
@@ -102,6 +107,7 @@ UPLOAD_DIR=uploads
 ```
 
 **Start the backend server:**
+
 ```bash
 npm run dev
 # Server runs on http://localhost:5000
@@ -126,6 +132,7 @@ npm run dev
 ### 4. Access the Application
 
 Open your browser and navigate to:
+
 - **Frontend:** http://localhost:3000
 - **Backend API:** http://localhost:5000/api
 
@@ -134,6 +141,7 @@ Open your browser and navigate to:
 ### Authentication Endpoints
 
 #### Register
+
 ```http
 POST /api/auth/register
 Content-Type: application/json
@@ -146,6 +154,7 @@ Content-Type: application/json
 ```
 
 #### Login
+
 ```http
 POST /api/auth/login
 Content-Type: application/json
@@ -157,42 +166,47 @@ Content-Type: application/json
 ```
 
 #### Get Current User
+
 ```http
 GET /api/auth/me
 Authorization: Bearer <token>
 ```
 
-### Notes Endpoints
+### Tasks Endpoints
 
-#### Create Note
+#### Create Task
+
 ```http
-POST /api/notes
+POST /api/tasks
 Authorization: Bearer <token>
 Content-Type: multipart/form-data
 
 {
-  "title": "My Note",
-  "content": "Note content here",
+  "title": "My Task",
+  "content": "Task content here",
   "isPinned": false,
   "file": <file> (optional)
 }
 ```
 
-#### Get All Notes
+#### Get All Tasks
+
 ```http
-GET /api/notes
+GET /api/tasks
 Authorization: Bearer <token>
 ```
 
-#### Get Single Note
+#### Get Single Task
+
 ```http
-GET /api/notes/:id
+GET /api/tasks/:id
 Authorization: Bearer <token>
 ```
 
-#### Update Note
+#### Update Task
+
 ```http
-PUT /api/notes/:id
+PUT /api/tasks/:id
 Authorization: Bearer <token>
 Content-Type: multipart/form-data
 
@@ -205,18 +219,21 @@ Content-Type: multipart/form-data
 ```
 
 #### Delete Note
+
 ```http
 DELETE /api/notes/:id
 Authorization: Bearer <token>
 ```
 
 #### Download File
+
 ```http
 GET /api/notes/:id/file
 Authorization: Bearer <token>
 ```
 
 #### Delete File
+
 ```http
 DELETE /api/notes/:id/file
 Authorization: Bearer <token>
@@ -228,7 +245,7 @@ Authorization: Bearer <token>
 
 1. **Upload**: User uploads a file through the frontend
 2. **Storage**: Multer saves the file temporarily
-3. **Encryption**: 
+3. **Encryption**:
    - Generate random IV (Initialization Vector)
    - Encrypt file using AES-256-CBC with encryption key
    - Save encrypted file with `.encrypted` extension
@@ -251,6 +268,7 @@ Authorization: Bearer <token>
 ## 🛠️ Tech Stack
 
 ### Backend
+
 - **Node.js** - Runtime environment
 - **Express** - Web framework
 - **MongoDB** - Database
@@ -261,6 +279,7 @@ Authorization: Bearer <token>
 - **crypto** (Node.js built-in) - File encryption
 
 ### Frontend
+
 - **React 18** - UI library
 - **Vite** - Build tool
 - **React Router** - Routing
@@ -304,10 +323,11 @@ Authorization: Bearer <token>
 ### For Production Deployment
 
 1. **Change all secrets** in `.env`:
+
    ```bash
    # Generate new JWT secret
    node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-   
+
    # Generate new encryption key
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
@@ -317,6 +337,7 @@ Authorization: Bearer <token>
 3. **Enable HTTPS** with SSL certificates
 
 4. **Set secure environment variables**:
+
    ```env
    NODE_ENV=production
    ```
@@ -324,6 +345,7 @@ Authorization: Bearer <token>
 5. **Implement rate limiting** for API endpoints
 
 6. **Regular security audits**:
+
    ```bash
    npm audit
    npm audit fix
@@ -340,6 +362,7 @@ Authorization: Bearer <token>
 ## 🧪 Testing
 
 ### Test User Registration
+
 ```bash
 curl -X POST http://localhost:5000/api/auth/register \
   -H "Content-Type: application/json" \
@@ -347,6 +370,7 @@ curl -X POST http://localhost:5000/api/auth/register \
 ```
 
 ### Test Login
+
 ```bash
 curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
@@ -354,6 +378,7 @@ curl -X POST http://localhost:5000/api/auth/login \
 ```
 
 ### Test Create Note
+
 ```bash
 curl -X POST http://localhost:5000/api/notes \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -365,6 +390,7 @@ curl -X POST http://localhost:5000/api/notes \
 ## 🐛 Troubleshooting
 
 ### MongoDB Connection Issues
+
 ```bash
 # Check MongoDB is running
 sudo systemctl status mongod
@@ -376,6 +402,7 @@ sudo systemctl start mongod
 ```
 
 ### Port Already in Use
+
 ```bash
 # Find process using port 5000
 lsof -i :5000
@@ -385,17 +412,20 @@ kill -9 <PID>
 ```
 
 ### File Upload Errors
+
 - Check `uploads/` directory exists and has write permissions
 - Verify file size is under 10MB
 - Ensure file type is in allowed list
 
 ### Encryption Key Errors
+
 - Must be exactly 64 hex characters (32 bytes)
 - Generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
 ## 📦 Building for Production
 
 ### Backend
+
 ```bash
 cd server
 npm install --production
@@ -403,6 +433,7 @@ npm start
 ```
 
 ### Frontend
+
 ```bash
 cd client
 npm run build
@@ -432,6 +463,7 @@ MIT License - feel free to use this project for personal or commercial purposes.
 ## 📞 Support
 
 For issues, questions, or contributions:
+
 - Open an issue on GitHub
 - Contact the development team
 

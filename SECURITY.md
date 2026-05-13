@@ -1,17 +1,20 @@
 # Security Architecture
 
 ## Overview
-This document describes the security measures implemented in the Secure Notes application.
+
+This document describes the security measures implemented in the RB Task Manager application for secure task management with encrypted file attachments.
 
 ## Authentication System
 
 ### JWT (JSON Web Tokens)
+
 - **Algorithm**: HS256 (HMAC with SHA-256)
 - **Token Expiry**: 7 days (configurable)
 - **Storage**: Client-side localStorage
 - **Transmission**: Authorization header with Bearer scheme
 
 ### Password Security
+
 - **Hashing Algorithm**: bcrypt
 - **Salt Rounds**: 10
 - **Password Requirements**: Minimum 6 characters
@@ -20,6 +23,7 @@ This document describes the security measures implemented in the Secure Notes ap
 ## File Encryption
 
 ### Encryption Algorithm
+
 - **Algorithm**: AES-256-CBC (Advanced Encryption Standard)
 - **Key Size**: 256 bits (32 bytes)
 - **Block Size**: 128 bits (16 bytes)
@@ -66,11 +70,13 @@ This document describes the security measures implemented in the Secure Notes ap
 ### Key Management
 
 #### Development
+
 - Key stored in `.env` file
 - Must be 32 bytes (64 hex characters)
 - Generated using cryptographically secure random bytes
 
 #### Production Recommendations
+
 1. **Environment Variables**: Store in secure environment variable system
 2. **Key Rotation**: Implement periodic key rotation
 3. **Key Backup**: Securely backup encryption keys
@@ -80,15 +86,17 @@ This document describes the security measures implemented in the Secure Notes ap
 ## Authorization
 
 ### Route Protection
+
 All note routes require valid JWT token in Authorization header.
 
 ### Ownership Verification
+
 ```javascript
-// Verify user owns the note before any operation
-if (note.user.toString() !== req.user.id) {
+// Verify user owns the task before any operation
+if (task.user.toString() !== req.user.id) {
   return res.status(403).json({
     success: false,
-    message: 'Not authorized'
+    message: "Not authorized",
   });
 }
 ```
@@ -96,14 +104,16 @@ if (note.user.toString() !== req.user.id) {
 ## Data Validation
 
 ### Input Validation
+
 - **Email**: Valid email format
 - **Password**: Minimum length validation
-- **Note Title**: Max 200 characters
-- **Note Content**: Max 10,000 characters
+- **Task Title**: Max 200 characters
+- **Task Content**: Max 10,000 characters
 - **File Size**: Max 10MB
 - **File Types**: Whitelist of allowed MIME types
 
 ### Output Sanitization
+
 - Sensitive file paths never exposed to client
 - Encryption IVs never exposed to client
 - User passwords never included in responses
@@ -111,15 +121,19 @@ if (note.user.toString() !== req.user.id) {
 ## Network Security
 
 ### CORS Configuration
+
 ```javascript
 // Production: Restrict to specific origins
-app.use(cors({
-  origin: 'https://yourdomain.com',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: "https://yourdomain.com",
+    credentials: true,
+  }),
+);
 ```
 
 ### HTTPS
+
 - **Development**: HTTP acceptable
 - **Production**: HTTPS mandatory
 - Prevents man-in-the-middle attacks
@@ -128,12 +142,14 @@ app.use(cors({
 ## Database Security
 
 ### MongoDB Security
+
 - **Authentication**: Enable MongoDB authentication
 - **Encryption at Rest**: Enable for production
 - **Network Access**: Restrict to application servers
 - **Backup**: Regular encrypted backups
 
 ### Sensitive Data
+
 - Passwords hashed before storage
 - Files stored encrypted
 - No plain text sensitive data in database
@@ -141,6 +157,7 @@ app.use(cors({
 ## File Storage Security
 
 ### Directory Structure
+
 ```
 uploads/
 ├── file1.jpg.encrypted
@@ -149,17 +166,20 @@ uploads/
 ```
 
 ### File Permissions
+
 - **Directory**: 755 (rwxr-xr-x)
 - **Files**: 644 (rw-r--r--)
 - **Process User**: Limited privileges
 
 ### Cleanup
+
 - Original files deleted after encryption
 - Orphaned files cleaned up on note deletion
 
 ## Error Handling
 
 ### Security Considerations
+
 - Never expose stack traces to client
 - Generic error messages for failed authentication
 - Detailed errors logged server-side only
@@ -168,6 +188,7 @@ uploads/
 ## Threat Model
 
 ### Protected Against
+
 ✅ SQL Injection (NoSQL injection)
 ✅ XSS (Cross-Site Scripting)
 ✅ CSRF (Cross-Site Request Forgery)
@@ -177,6 +198,7 @@ uploads/
 ✅ Data breaches (encrypted at rest)
 
 ### Additional Recommendations
+
 ⚠️ Rate limiting on API endpoints
 ⚠️ IP whitelisting for sensitive operations
 ⚠️ 2FA (Two-Factor Authentication)
@@ -189,12 +211,14 @@ uploads/
 ## Compliance
 
 ### Data Protection
+
 - User data encrypted at rest
 - Files encrypted with AES-256
 - Secure transmission over HTTPS
 - User isolation (can only access own data)
 
 ### Best Practices
+
 - OWASP Top 10 considerations
 - Principle of least privilege
 - Defense in depth
@@ -224,6 +248,7 @@ uploads/
 ## Incident Response
 
 ### Security Breach Protocol
+
 1. Immediately revoke compromised credentials
 2. Rotate encryption keys
 3. Invalidate all JWT tokens
@@ -235,12 +260,14 @@ uploads/
 ## Regular Maintenance
 
 ### Security Updates
+
 - Weekly dependency updates
 - Monthly security audits
 - Quarterly penetration testing
 - Annual security review
 
 ### Monitoring
+
 - Failed login attempts
 - Unusual file access patterns
 - API abuse
@@ -248,6 +275,3 @@ uploads/
 - Error rates
 
 ---
-
-**Last Updated**: 2024
-**Security Contact**: security@yourdomain.com
